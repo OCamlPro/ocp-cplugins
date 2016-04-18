@@ -1,0 +1,5 @@
+/_obuild
+/config.ocp
+*~
+*.so
+*.log
