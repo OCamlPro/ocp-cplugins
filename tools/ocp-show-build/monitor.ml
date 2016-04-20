@@ -34,25 +34,52 @@ let should_exit () =
     LwtWrapper.exit ()
   end
 
-module Server = LwtWrapper.MakeSocket(struct
-  let connection_handler conn_id sock sockaddr =
+module Server = LwtWrapper.MakeServer(struct
+
+  type server_info = unit
+  type info = { mutable pid : int;
+                mutable synchronous_mode: bool }
+
+  let connection_info server_info sockaddr =
+    { pid = 0;
+      synchronous_mode = false;
+    }
+
+  let connection_handler con =
     incr wait;
   (* Printf.eprintf "\tConnected\n%!"; *)
     ()
 
-  let message_handler conn_id sock msg_id msg =
+  let message_handler con msg =
+    let info = LwtWrapper.info con in
     try
-(*      Printf.eprintf "\tMessage received %d %d\n%!"
-        msg_id (String.length msg); *)
-      let msg = MonitorProtocol.parse_msg msg in
-      if !only_commands then
+      (*      Printf.eprintf "\tMessage received %d %d\n%!"
+              msg_id (String.length msg); *)
+      let msg = MonitorProtocol.C2S.parse_msg msg in
+
+      begin
         match msg with
-        | MSG_C2S_INIT t ->
-          Printf.fprintf !log "-- in %s --\n%!" t.MSG_C2S_INIT.curdir;
-          Printf.fprintf !log "%s\n%!" (String.concat " " t.MSG_C2S_INIT.args)
+        | C2S.MSG_INIT t ->
+          info.pid <- t.C2S.MSG_INIT.pid;
+          info.synchronous_mode <- t.C2S.MSG_INIT.synchronous_mode <> 0;
         | _ -> ()
-      else
-        Printf.fprintf !log "%d: %s\n%!" conn_id (MonitorProtocol.msg_to_string msg)
+      end;
+
+      if info.synchronous_mode then
+        LwtWrapper.send_message con (
+          MonitorProtocol.S2C.marshal S2C.MSG_ACK);
+
+      begin
+        if !only_commands then
+          match msg with
+          | C2S.MSG_INIT t ->
+            Printf.fprintf !log "-- in %s --\n%!" t.C2S.MSG_INIT.curdir;
+            Printf.fprintf !log "%s\n%!" (String.concat " " t.C2S.MSG_INIT.args)
+          | _ -> ()
+        else
+          Printf.fprintf !log "%d: %s\n%!" info.pid
+            (MonitorProtocol.C2S.msg_to_string msg)
+      end;
     with exn ->
       Printf.eprintf "message_handler: exception %s\n%!"
         (Printexc.to_string exn)
@@ -64,11 +91,10 @@ module Server = LwtWrapper.MakeSocket(struct
 end)
 
 let main args =
-  let port = 0 in
   let loopback = true in
-  let port = Server.create_server ~loopback ~port in
+  let port = Server.create ~loopback () in
 
-  Unix.putenv "OCP_WATCHER_PORT" (string_of_int port);
+  Unix.putenv "OCP_WATCHER_PORT" ((string_of_int port) ^ "s");
 
   LwtWrapper.exec args.(0)  args
     (function

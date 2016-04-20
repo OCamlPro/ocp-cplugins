@@ -110,8 +110,9 @@ static void use_message(int msg, int nargs, intnat *args)
   
 }
 
-static int parse_message()
+static void parse_message(msg_len)
 {
+#if 0
   int np = pos;
   unsigned char *s = (unsigned char*) buf;
   int nargs = 0;
@@ -171,6 +172,7 @@ static int parse_message()
   }
   pos = 0;
   return 1;
+#endif
 }
 
 #define SET_INT(buf,pos,msg_len)                \
@@ -184,10 +186,9 @@ static int msg_id = 0;
 static int buf_send()
 {
   char *s = buf;
-  int msg_len = pos - 8;
+  int msg_len = pos - 4;
   SET_INT(buf,0,msg_len);
   msg_id++;
-  SET_INT(buf,4,msg_id);
 /*  fprintf(stderr, "Message send %d %d\n", msg_id,msg_len); */
   if(sockfd >= 0){
     while(pos > 0){
@@ -210,15 +211,20 @@ static void buf_end_msg()
     int id = buf_send();
     if( id > 0 && synchronous_mode ){
       /* For now, we suppose server messages are short... */
-      int msg_read = 0;
-      char * s = buf;
-      while( !msg_read ){
-        int nr = read(sockfd, s, BUF_LEN - pos);
+      int msg_len = 100000;
+      pos = 0;
+      while( pos < msg_len + 4){
+        int nr = read(sockfd, buf+pos, BUF_LEN - pos);
         if( nr <= 0 ){ sockfd = -1; pos = 0; return; }
-        s += nr;
         pos += nr;
-        msg_read = parse_message();
+        if( pos >= 4 ){
+          unsigned char* ubuf = (unsigned char*) buf;
+          msg_len =
+            ubuf[0] | ((ubuf[1] | ( (ubuf[2] | (ubuf[3] << 8)) << 8 )) << 8);
+        }
       }
+      pos = 4;
+      parse_message(msg_len);
       pos = 0;
     }
   }
@@ -229,7 +235,7 @@ static int buf_begin_msg(int msg)
 {
   if( sockfd >= 0 ){
     
-    pos = 8;
+    pos = 4;
     buf[pos++] = msg;
     return 1;
   }
