@@ -90,11 +90,15 @@ module Server = LwtWrapper.MakeServer(struct
 
 end)
 
+let sync_mode = ref false
+
 let main args =
   let loopback = true in
   let port = Server.create ~loopback () in
 
-  Unix.putenv "OCP_WATCHER_PORT" ((string_of_int port) ^ "s");
+  Unix.putenv "OCP_WATCHER_PORT" (
+    (string_of_int port) ^
+      (if !sync_mode then "s" else ""));
 
   LwtWrapper.exec args.(0)  args
     (function
@@ -116,6 +120,7 @@ let arg_list = Arg.align [
     close_log_on_exit := true
   ), "FILE Store results in FILE";
   "--all", Arg.Clear only_commands, " Print all messages";
+  "--sync", Arg.Set sync_mode, " Ask commands to be in sync with server";
   "--", Arg.Rest arg_anon, "COMMAND Command to call";
 ]
 let arg_usage = String.concat "\n"
