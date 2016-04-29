@@ -20,5 +20,5 @@
 
 begin library "ocplib-cplugin-monitor"
     files = [ "monitorProtocol.ml" ]
-    requires = [ "ocplib-lwt-wrapper" ]
+    requires = [ "ocplib-concur-lwt" ]
 end

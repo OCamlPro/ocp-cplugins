@@ -20,5 +20,5 @@
 
 begin program "ocp-show-build"
     files = [ "monitor.ml" ]
-    requires = [ "ocplib-lwt-wrapper" "ocplib-cplugin-monitor" ]
+    requires = [ "ocplib-concur-lwt" "ocplib-cplugin-monitor" ]
 end

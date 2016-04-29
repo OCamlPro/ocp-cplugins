@@ -270,6 +270,8 @@ static void send_initial_message(char* exe_name, char** argv)
 
 static int (*my_caml_read_directory)(char * dirname, struct ext_table * contents);
 
+typedef void* (*caml_cplugins_query)(int);
+
 static intnat caml_cplugins_watcher(int prim, intnat arg1, intnat arg2, intnat arg3)
 {
   switch(prim){
@@ -381,7 +383,9 @@ static intnat caml_cplugins_watcher(int prim, intnat arg1, intnat arg2, intnat a
 
 typedef value (*caml_cplugins_prim_type)(int,value,value,value);
 
-void caml_cplugin_init(char* exe_name, char** argv, caml_cplugins_prim_type* watcher, void* read_dir)
+void caml_cplugin_init(char* exe_name,
+                       char** argv,
+                       caml_cplugins_query query)
 {
   char *s = getenv("OCP_WATCHER_PORT");
   /*  fprintf(stderr, "port = %s\n", s); */
@@ -415,8 +419,13 @@ void caml_cplugin_init(char* exe_name, char** argv, caml_cplugins_prim_type* wat
       /* fprintf(stderr, "connected...\n"); */
       send_initial_message(exe_name, argv);
 
-      *watcher = caml_cplugins_watcher;
-      my_caml_read_directory = read_dir;
+      /* We will change the hook on system calls. */
+      value* watcher = query(CAML_CPLUGINS_PRIM_HOOK);
+      *watcher = (value)caml_cplugins_watcher;
+
+      /* We will also need caml_read_directory() to simulate the
+         corresponding call.  */
+      my_caml_read_directory = query(CAML_CPLUGINS_PRIM_READ_DIRECTORY);
     } else {
       fprintf(stderr, "cplugin: could not connect to port %d\n", port);
     }
