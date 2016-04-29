@@ -43,5 +43,4 @@ install:
 	cp -f _obuild/ocp-show-build/ocp-show-build.asm $(BINDIR)/ocp-show-build
 	cp -f plugins/central_monitor/central_monitor.so $(BINDIR)/
 	cp -f plugins/print_commands/print_commands.so $(BINDIR)/
-	ocp-build install ocplib-lwt-wrapper
 	ocp-build install ocplib-cplugin-monitor

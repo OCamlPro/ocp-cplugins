@@ -13,6 +13,8 @@ You need an OCaml version with CAML_CPLUGINS support (for now,
 available in the switch `4.02.3+ocp` in
 `github.com/lefessan/opam-repository-perso`)
 
+This version also needs `ocplib-concur`.
+
 ```
 make opam-deps
 ./configure

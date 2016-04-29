@@ -21,10 +21,8 @@ AC_ARG_ENABLE(version-check,
 AC_PROG_CC
 
 # Check that OCaml version is greater or equal to 4.00.0
-if test "$VERSION_CHECK" = "yes" ; then
 
-  AC_PROG_OCAML
-  AC_PROG_CAMLP4
+AC_PROG_OCAML
 
   AX_SPLIT_VERSION(OCAMLVERSION)
   OCAML_MAJOR_VERSION=$AX_MAJOR_VERSION
@@ -36,6 +34,11 @@ if test "$VERSION_CHECK" = "yes" ; then
   fi
   AX_COMPARE_VERSION( [$OCAMLVERSION], [lt], [3.12.1],
      AC_MSG_ERROR([Your version of OCaml: $OCAMLVERSION is not supported]))
+
+
+AC_CHECK_OCAML_PKG([ocplib-concur-lwt])
+if test "$OCAML_PKG_ocplib_concur_lwt" = "no"; then
+   AC_MSG_ERROR([Please install OCaml package 'ocplib-concur-lwt'.])
 fi
 
 if test "x$prefix" = "xNONE"; then

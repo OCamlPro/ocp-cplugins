@@ -31,10 +31,10 @@ let should_exit () =
   decr wait;
   if !wait = 0 then begin
     if !close_log_on_exit then close_out !log;
-    LwtWrapper.exit ()
+    Concur.exit ()
   end
 
-module Server = LwtWrapper.MakeServer(struct
+module Server = Concur.MakeServer(struct
 
   type server_info = unit
   type info = { mutable pid : int;
@@ -47,14 +47,13 @@ module Server = LwtWrapper.MakeServer(struct
 
   let connection_handler con =
     incr wait;
-  (* Printf.eprintf "\tConnected\n%!"; *)
+    (*    Printf.eprintf "\tConnected\n%!"; *)
     ()
 
   let message_handler con msg =
-    let info = LwtWrapper.info con in
+    let info = Concur.info con in
     try
-      (*      Printf.eprintf "\tMessage received %d %d\n%!"
-              msg_id (String.length msg); *)
+      (*    Printf.eprintf "\tMessage received %d\n%!" (String.length msg); *)
       let msg = MonitorProtocol.C2S.parse_msg msg in
 
       begin
@@ -66,7 +65,7 @@ module Server = LwtWrapper.MakeServer(struct
       end;
 
       if info.synchronous_mode then
-        LwtWrapper.send_message con (
+        Concur.send_message con (
           MonitorProtocol.S2C.marshal S2C.MSG_ACK);
 
       begin
@@ -100,7 +99,7 @@ let main args =
     (string_of_int port) ^
       (if !sync_mode then "s" else ""));
 
-  LwtWrapper.exec args.(0)  args
+  Concur.exec args.(0)  args
     (function
     | Unix.WEXITED n->
       should_exit ()
@@ -108,7 +107,7 @@ let main args =
       should_exit ()
 
   );
-  LwtWrapper.main ()
+  Concur.main ()
 
 let args = ref []
 

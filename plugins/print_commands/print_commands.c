@@ -32,12 +32,11 @@
 
 #include <unistd.h>
 
-typedef value (*caml_cplugins_prim_type)(int,value,value,value);
+typedef value (*caml_cplugins_query)(int);
 
 void caml_cplugin_init(char* exe_name,
                        char** argv,
-                       caml_cplugins_prim_type* watcher,
-                       void* read_dir)
+                       caml_cplugins_query* query)
 {
   char *watcher_log = getenv("CAML_PRINT_COMMANDS_LOG");
   if(watcher_log == NULL) watcher_log = "print_commands.log";
